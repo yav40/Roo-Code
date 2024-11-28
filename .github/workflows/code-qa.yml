@@ -7,6 +7,9 @@ on:
     types: [opened, reopened, ready_for_review, synchronize]
     branches: [main]
 
+env:
+  NODE_VERSION: '18'
+
 jobs:
   code-qa:
     runs-on: ubuntu-latest
@@ -17,7 +20,7 @@ jobs:
       - name: Setup Node.js environment
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: ${{ env.NODE_VERSION }}
   
       - name: Cache node modules
         id: cache-node-modules
@@ -26,9 +29,9 @@ jobs:
           cache-name: cache-node-modules
         with:
           path: node_modules
-          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
+          key: ${{ runner.os }}-node-${{ env.NODE_VERSION }}-build-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
           restore-keys: |
-            ${{ runner.os }}-build-${{ env.cache-name }}-
+            ${{ runner.os }}-node-${{ env.NODE_VERSION }}-build-${{ env.cache-name }}-
             ${{ runner.os }}-build-
             ${{ runner.os }}-
 
