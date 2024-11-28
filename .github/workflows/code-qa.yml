@@ -14,11 +14,11 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - name: cached install
+        uses: RooVetGit/Roo-GHA/.github/actions/setup-node-cache-and-install@main
         with:
-          node-version: '18'
-          cache: 'npm'
+          node-version: "18"
+          clean-install: false
 
       - name: Install dependencies
         run: npm run install:all
