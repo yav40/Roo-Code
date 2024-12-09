@@ -2,9 +2,8 @@ name: Release
 run-name: Release ${{ github.event_name == 'push' && '- Create Changeset PR' || '- Approve & Merge Changeset PR' }}
 
 on:
-  push:
-    branches:
-      - main
+  pull_request:
+        types: [closed]
   pull_request_target:
 
 concurrency: ${{ github.workflow }}-${{ github.ref }}
@@ -15,7 +14,10 @@ env:
 jobs:
   release:
     name: Release
-    if: ${{ github.event_name == 'push' && github.actor != 'R00-B0T'}}
+    if: >
+        github.event_name == 'pull_request' &&
+        github.event.pull_request.merged == true &&
+        github.event.pull_request.base.ref == 'main'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -29,18 +31,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-      - id: install-aws-cli
-        uses: unfor19/install-aws-cli-action@v1
-        with:
-          version: 2
-          verbose: false
-          arch: amd64
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
+
       - name: NPM Install
         run: |
           npm run install:all
