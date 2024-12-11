@@ -8,6 +8,7 @@ jobs:
   publish-extension:
     if: ${{ github.actor == 'R00-B0T'}}
     runs-on: ubuntu-latest
+    if: ${{ github.actor == 'R00-B0T'}}
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
