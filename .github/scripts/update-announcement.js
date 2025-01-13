@@ -80,8 +80,7 @@ function updateAnnouncementComponent(changelogEntry) {
     const content = fs.readFileSync(ANNOUNCEMENT_PATH, 'utf8');
     
     // Convert changelog entry to JSX-friendly format
-    const formattedContent = convertMarkdownToJsx(changelogEntry);
-    formattedContent.replace('{" "}', "")
+    const formattedContent = convertMarkdownToJsx(changelogEntry).replace('{" "}', "");
     
     // Find and update the version number in h3 tag
     const h3StartMarker = '<h3 style={{ margin: "0 0 8px" }}>';
