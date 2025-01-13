@@ -111,15 +111,31 @@ jobs:
           PREV_VERSION: ${{ steps.get_version.outputs.prev_version }}
         run: python .github/scripts/overwrite_changeset_changelog.py
 
-      # Commit and push changelog updates
-      - name: Push Changelog updates
+      - name: NPM Install
+        if: ${{ !contains(github.event.pull_request.labels.*.name, 'changelog-ready') }}
+        run: npm install
+
+      # Update announcement with latest changelog entry
+      - name: Update Announcement
+        if: ${{ !contains(github.event.pull_request.labels.*.name, 'changelog-ready') }}
+        env:
+          VERSION: ${{ steps.get_version.outputs.version }}
+        run: |
+          node .github/scripts/update-announcement.js
+          python .github/scripts/update-announcement-id.py
+          npx prettier --config .prettierrc.json 'webview-ui/src/components/chat/Announcement.tsx' --write
+
+      # Commit and push changelog and announcement updates
+      - name: Push updates
         if: ${{ !contains(github.event.pull_request.labels.*.name, 'changelog-ready') }}
         run: |
           git config user.name "R00-B0T"
           git config user.email github-actions@github.com
           echo "Running git add and commit..."
           git add CHANGELOG.md
-          git commit -m "Updating CHANGELOG.md format"
+          git add webview-ui/src/components/chat/Announcement.tsx
+          git add src/core/webview/ClineProvider.ts
+          git commit -m "Update CHANGELOG.md and announcement files"
           git status
           echo "--------------------------------------------------------------------------------"
           echo "Pushing to remote..."
