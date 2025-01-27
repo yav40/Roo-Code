@@ -1,30 +1,35 @@
+name: Extension Test
+
 on:
   push:
-    branches:
-        - feature/integrationTestCI
+    branches: [ feature/integrationTestCI ]
   pull_request:
-    types: [opened, reopened, ready_for_review, synchronize]
-    branches: [feature/integrationTestCI]
+    branches: [ feature/integrationTestCI ]
   workflow_dispatch:
 
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
-    steps:  
-      - name: Checkout code
-        uses: actions/checkout@v4
-      
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-            node-version: '18'
-            cache: 'npm'
-      
-      - name: Install dependencies
-        run: npm run install:all
-      
-      - name: Compile TypeScript
-        run: npm run compile
     
-      - name: Run test
-        run: xvfb-run -a npm run test:extension
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Create .test_env file
+      run: |
+        echo "OPENROUTER_API_KEY=${{ secrets.OPENROUTER_API_KEY }}" > .test_env
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        
+    - name: Install dependencies
+      run: npm run install:all
+      
+    - name: Compile TypeScript
+      run: npm run compile
+      
+    - name: Run tests
+      run: xvfb-run -a npm run test:extension
+
+
