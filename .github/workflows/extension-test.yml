@@ -1,10 +1,10 @@
 on:
   push:
     branches:
-        - feature/extension-test
+        - feature/integrationTestCI
   pull_request:
     types: [opened, reopened, ready_for_review, synchronize]
-    branches: [feature/extension-test]
+    branches: [feature/integrationTestCI]
   workflow_dispatch:
 
 jobs:
