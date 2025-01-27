@@ -1,9 +1,11 @@
 on:
   push:
-    branches: []
+    branches:
+        - feature/extension-test
   pull_request:
     types: [opened, reopened, ready_for_review, synchronize]
-    branches: [main]
+    branches: [feature/extension-test]
+  workflow_dispatch:
 
 jobs:
   build:
