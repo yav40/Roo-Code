@@ -9,8 +9,9 @@ on:
 
 jobs:
   test:
-    runs-on: windows-latest
-    
+    runs-on: ubuntu-latest
+    env:
+      DISPLAY: :99
     steps:
     - uses: actions/checkout@v4
     
@@ -30,6 +31,6 @@ jobs:
       run: npm run compile
       
     - name: Run tests
-      run: npm run test:extension
+      run: xvfb-run -a npm run test:extension
 
 
