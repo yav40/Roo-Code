@@ -26,6 +26,9 @@ jobs:
         
     - name: Install dependencies
       run: npm run install:all
+    
+    - name: Working directory
+      run: ls
       
     - name: Compile TypeScript
       run: npm run compile
