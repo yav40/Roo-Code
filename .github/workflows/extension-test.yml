@@ -23,17 +23,36 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: '18'
+
+    - name: Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y xvfb dbus dbus-x11 at-spi2-core libsecret-1-0
+        sudo dbus-uuidgen --ensure
+        sudo service dbus start
+
+    - name: Start X11 and D-Bus
+      run: |
+        /usr/bin/Xvfb :99 -screen 0 1024x768x24 > /dev/null 2>&1 &
+        sleep 3
+        dbus-launch --auto-syntax > /tmp/dbus.env
+        source /tmp/dbus.env
         
     - name: Install dependencies
       run: npm run install:all
     
-    - name: Working directory
-      run: ls
+    - name: Verify environment
+      run: |
+        echo "Checking display server..."
+        ps aux | grep Xvfb
+        echo "Checking dbus..."
+        dbus-send --session --dest=org.freedesktop.DBus --type=method_call --print-reply /org/freedesktop/DBus org.freedesktop.DBus.ListNames
       
     - name: Compile TypeScript
       run: npm run compile
       
     - name: Run tests
-      run: xvfb-run -a npm run test:extension
-
+      run: |
+        source /tmp/dbus.env
+        xvfb-run -a --server-args="-screen 0 1024x768x24" npm run test:extension
 
