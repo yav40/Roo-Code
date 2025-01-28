@@ -12,6 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       DISPLAY: :99
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
     steps:
     - uses: actions/checkout@v4
     
@@ -47,12 +48,18 @@ jobs:
         ps aux | grep Xvfb
         echo "Checking dbus..."
         dbus-send --session --dest=org.freedesktop.DBus --type=method_call --print-reply /org/freedesktop/DBus org.freedesktop.DBus.ListNames
+        echo "Checking environment variables..."
+        if [ -z "$OPENROUTER_API_KEY" ]; then
+          echo "OPENROUTER_API_KEY is not set"
+          exit 1
+        fi
       
     - name: Compile TypeScript
       run: npm run compile
       
     - name: Run tests
+      env:
+        OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
       run: |
         source /tmp/dbus.env
         xvfb-run -a --server-args="-screen 0 1024x768x24" npm run test:extension
-
