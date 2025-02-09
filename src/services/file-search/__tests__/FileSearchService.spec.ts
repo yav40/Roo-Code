@@ -5,7 +5,7 @@ import { describe, expect, test, beforeAll } from "vitest"
 
 import { FileSearchService } from "../FileSearchService"
 
-describe("listFiles", () => {
+describe("FileSearchService", () => {
 	const service = new FileSearchService(path.join(process.cwd(), "node_modules"))
 
 	beforeAll(async () => {
