@@ -50,6 +50,7 @@ import {
 	ClineSay,
 	ClineSayBrowserAction,
 	ClineSayTool,
+	ToolProgressStatus,
 } from "../shared/ExtensionMessage"
 import { getApiMetrics } from "../shared/getApiMetrics"
 import { HistoryItem } from "../shared/HistoryItem"
@@ -407,6 +408,7 @@ export class Cline {
 		type: ClineAsk,
 		text?: string,
 		partial?: boolean,
+		progressStatus?: ToolProgressStatus,
 	): Promise<{ response: ClineAskResponse; text?: string; images?: string[] }> {
 		// If this Cline instance was aborted by the provider, then the only thing keeping us alive is a promise still running in the background, in which case we don't want to send its result to the webview as it is attached to a new instance of Cline now. So we can safely ignore the result of any active promises, and this class will be deallocated. (Although we set Cline = undefined in provider, that simply removes the reference to this instance, but the instance is still alive until this promise resolves or rejects.)
 		if (this.abort) {
@@ -422,6 +424,7 @@ export class Cline {
 					// existing partial message, so update it
 					lastMessage.text = text
 					lastMessage.partial = partial
+					lastMessage.progressStatus = progressStatus
 					// todo be more efficient about saving and posting only new data or one whole message at a time so ignore partial for saves, and only post parts of partial message instead of whole array in new listener
 					// await this.saveClineMessages()
 					// await this.providerRef.deref()?.postStateToWebview()
@@ -459,6 +462,8 @@ export class Cline {
 					// lastMessage.ts = askTs
 					lastMessage.text = text
 					lastMessage.partial = false
+					lastMessage.progressStatus = progressStatus
+
 					await this.saveClineMessages()
 					// await this.providerRef.deref()?.postStateToWebview()
 					await this.providerRef
@@ -510,6 +515,7 @@ export class Cline {
 		images?: string[],
 		partial?: boolean,
 		checkpoint?: Record<string, unknown>,
+		progressStatus?: ToolProgressStatus,
 	): Promise<undefined> {
 		if (this.abort) {
 			throw new Error(`Task: ${this.taskNumber} Roo Code instance aborted (#2)`)
@@ -525,6 +531,7 @@ export class Cline {
 					lastMessage.text = text
 					lastMessage.images = images
 					lastMessage.partial = partial
+					lastMessage.progressStatus = progressStatus
 					await this.providerRef
 						.deref()
 						?.postMessageToWebview({ type: "partialMessage", partialMessage: lastMessage })
@@ -544,6 +551,7 @@ export class Cline {
 					lastMessage.text = text
 					lastMessage.images = images
 					lastMessage.partial = false
+					lastMessage.progressStatus = progressStatus
 
 					// instead of streaming partialMessage events, we do a save and post like normal to persist to disk
 					await this.saveClineMessages()
@@ -1408,8 +1416,12 @@ export class Cline {
 					isCheckpointPossible = true
 				}
 
-				const askApproval = async (type: ClineAsk, partialMessage?: string) => {
-					const { response, text, images } = await this.ask(type, partialMessage, false)
+				const askApproval = async (
+					type: ClineAsk,
+					partialMessage?: string,
+					progressStatus?: ToolProgressStatus,
+				) => {
+					const { response, text, images } = await this.ask(type, partialMessage, false, progressStatus)
 					if (response !== "yesButtonClicked") {
 						// Handle both messageResponse and noButtonClicked with text
 						if (text) {
@@ -1717,8 +1729,16 @@ export class Cline {
 						try {
 							if (block.partial) {
 								// update gui message
+								let toolProgressStatus
+								if (this.diffStrategy && this.diffStrategy.getProgressStatus) {
+									toolProgressStatus = this.diffStrategy.getProgressStatus(block)
+								}
+
 								const partialMessage = JSON.stringify(sharedMessageProps)
-								await this.ask("tool", partialMessage, block.partial).catch(() => {})
+
+								await this.ask("tool", partialMessage, block.partial, toolProgressStatus).catch(
+									() => {},
+								)
 								break
 							} else {
 								if (!relPath) {
@@ -1813,7 +1833,12 @@ export class Cline {
 									diff: diffContent,
 								} satisfies ClineSayTool)
 
-								const didApprove = await askApproval("tool", completeMessage)
+								let toolProgressStatus
+								if (this.diffStrategy && this.diffStrategy.getProgressStatus) {
+									toolProgressStatus = this.diffStrategy.getProgressStatus(block, diffResult)
+								}
+
+								const didApprove = await askApproval("tool", completeMessage, toolProgressStatus)
 								if (!didApprove) {
 									await this.diffViewProvider.revertChanges() // This likely handles closing the diff view
 									break
