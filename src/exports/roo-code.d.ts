@@ -218,6 +218,7 @@ export type GlobalStateKey =
 	| "fuzzyMatchThreshold"
 	| "writeDelayMs"
 	| "terminalOutputLineLimit"
+	| "terminalShellIntegrationTimeout"
 	| "mcpEnabled"
 	| "enableMcpServerCreation"
 	| "alwaysApproveResubmit"
