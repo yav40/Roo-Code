@@ -524,6 +524,7 @@ describe("ClineProvider", () => {
 			browserToolEnabled: true,
 			telemetrySetting: "unset",
 			showRooIgnoredFiles: true,
+			renderContext: "sidebar",
 		}
 
 		const message: ExtensionMessage = {
