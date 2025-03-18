@@ -1,5 +1,17 @@
 # Roo Code Changelog
 
+## 3.9.0
+
+### Minor Changes
+
+- API provider: Choose specific provider when using OpenRouter
+
+### Patch Changes
+
+- Fix SettingsView scrolling in VSCode editor tab
+- add multiple workspaces support
+- Aider-inspired polyglot benchmarks
+
 ## [3.8.6] - 2025-03-13
 
 - Revert SSE MCP support while we debug some config validation issues
