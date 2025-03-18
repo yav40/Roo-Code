@@ -8,5 +8,14 @@
 		"out": true, // set this to false to include "out" folder in search results
 		"dist": true // set this to false to include "dist" folder in search results
 	},
+	"python.testing.unittestArgs": [
+		"-v",
+		"-s",
+		".",
+		"-p",
+		"*test.py"
+	],
+	"python.testing.pytestEnabled": false,
+	"python.testing.unittestEnabled": true,
 	// Turn off tsc task auto detection since we have the necessary tasks as npm scripts
 }
