@@ -37,6 +37,8 @@ export interface ExtensionStateContextType extends ExtensionState {
 	setSoundVolume: (value: number) => void
 	terminalShellIntegrationTimeout?: number
 	setTerminalShellIntegrationTimeout: (value: number) => void
+	setTtsEnabled: (value: boolean) => void
+	setTtsSpeed: (value: number) => void
 	setDiffEnabled: (value: boolean) => void
 	setEnableCheckpoints: (value: boolean) => void
 	setBrowserViewportSize: (value: string) => void
@@ -117,6 +119,8 @@ export const ExtensionStateContextProvider: React.FC<{ children: React.ReactNode
 		allowedCommands: [],
 		soundEnabled: false,
 		soundVolume: 0.5,
+		ttsEnabled: false,
+		ttsSpeed: 1.0,
 		diffEnabled: false,
 		enableCheckpoints: true,
 		checkpointStorage: "task",
@@ -236,6 +240,7 @@ export const ExtensionStateContextProvider: React.FC<{ children: React.ReactNode
 		filePaths,
 		openedTabs,
 		soundVolume: state.soundVolume,
+		ttsSpeed: state.ttsSpeed,
 		fuzzyMatchThreshold: state.fuzzyMatchThreshold,
 		writeDelayMs: state.writeDelayMs,
 		screenshotQuality: state.screenshotQuality,
@@ -261,6 +266,8 @@ export const ExtensionStateContextProvider: React.FC<{ children: React.ReactNode
 		setAllowedCommands: (value) => setState((prevState) => ({ ...prevState, allowedCommands: value })),
 		setSoundEnabled: (value) => setState((prevState) => ({ ...prevState, soundEnabled: value })),
 		setSoundVolume: (value) => setState((prevState) => ({ ...prevState, soundVolume: value })),
+		setTtsEnabled: (value) => setState((prevState) => ({ ...prevState, ttsEnabled: value })),
+		setTtsSpeed: (value) => setState((prevState) => ({ ...prevState, ttsSpeed: value })),
 		setDiffEnabled: (value) => setState((prevState) => ({ ...prevState, diffEnabled: value })),
 		setEnableCheckpoints: (value) => setState((prevState) => ({ ...prevState, enableCheckpoints: value })),
 		setBrowserViewportSize: (value: string) =>

@@ -40,6 +40,7 @@ import { BrowserSession } from "../../services/browser/BrowserSession"
 import { discoverChromeInstances } from "../../services/browser/browserDiscovery"
 import { fileExistsAtPath } from "../../utils/fs"
 import { playSound, setSoundEnabled, setSoundVolume } from "../../utils/sound"
+import { playTts, setTtsEnabled, setTtsSpeed } from "../../utils/tts"
 import { singleCompletionHandler } from "../../utils/single-completion-handler"
 import { searchCommits } from "../../utils/git"
 import { getDiffStrategy } from "../diff/DiffStrategy"
@@ -63,6 +64,7 @@ import { getNonce } from "./getNonce"
 import { getUri } from "./getUri"
 import { telemetryService } from "../../services/telemetry/TelemetryService"
 import { TelemetrySetting } from "../../shared/TelemetrySetting"
+import { getWorkspacePath } from "../../utils/path"
 
 /**
  * https://github.com/microsoft/vscode-webview-ui-toolkit-samples/blob/main/default/weather-webview/src/providers/WeatherViewProvider.ts
@@ -87,7 +89,9 @@ export class ClineProvider extends EventEmitter<ClineProviderEvents> implements 
 	private contextProxy: ContextProxy
 	configManager: ConfigManager
 	customModesManager: CustomModesManager
-
+	get cwd() {
+		return getWorkspacePath()
+	}
 	constructor(
 		readonly context: vscode.ExtensionContext,
 		private readonly outputChannel: vscode.OutputChannel,
@@ -359,6 +363,11 @@ export class ClineProvider extends EventEmitter<ClineProviderEvents> implements 
 			Terminal.setShellIntegrationTimeout(terminalShellIntegrationTimeout ?? TERMINAL_SHELL_INTEGRATION_TIMEOUT)
 		})
 
+		// Initialize tts enabled state
+		this.getState().then(({ ttsEnabled }) => {
+			setTtsEnabled(ttsEnabled ?? false)
+		})
+
 		webviewView.webview.options = {
 			// Allow scripts in the webview
 			enableScripts: true,
@@ -498,7 +507,7 @@ export class ClineProvider extends EventEmitter<ClineProviderEvents> implements 
 
 		const taskId = historyItem.id
 		const globalStorageDir = this.contextProxy.globalStorageUri.fsPath
-		const workspaceDir = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath ?? ""
+		const workspaceDir = this.cwd
 
 		const checkpoints: Pick<ClineOptions, "enableCheckpoints" | "checkpointStorage"> = {
 			enableCheckpoints,
@@ -1236,6 +1245,23 @@ export class ClineProvider extends EventEmitter<ClineProviderEvents> implements 
 						setSoundVolume(soundVolume)
 						await this.postStateToWebview()
 						break
+					case "ttsEnabled":
+						const ttsEnabled = message.bool ?? true
+						await this.updateGlobalState("ttsEnabled", ttsEnabled)
+						setTtsEnabled(ttsEnabled) // Add this line to update the tts utility
+						await this.postStateToWebview()
+						break
+					case "ttsSpeed":
+						const ttsSpeed = message.value ?? 1.0
+						await this.updateGlobalState("ttsSpeed", ttsSpeed)
+						setTtsSpeed(ttsSpeed)
+						await this.postStateToWebview()
+						break
+					case "playTts":
+						if (message.text) {
+							playTts(message.text)
+						}
+						break
 					case "diffEnabled":
 						const diffEnabled = message.bool ?? true
 						await this.updateGlobalState("diffEnabled", diffEnabled)
@@ -1672,7 +1698,7 @@ export class ClineProvider extends EventEmitter<ClineProviderEvents> implements 
 						}
 						break
 					case "searchCommits": {
-						const cwd = vscode.workspace.workspaceFolders?.map((folder) => folder.uri.fsPath).at(0)
+						const cwd = this.cwd
 						if (cwd) {
 							try {
 								const commits = await searchCommits(message.query || "", cwd)
@@ -1940,7 +1966,7 @@ export class ClineProvider extends EventEmitter<ClineProviderEvents> implements 
 				fuzzyMatchThreshold,
 				Experiments.isEnabled(experiments, EXPERIMENT_IDS.DIFF_STRATEGY),
 			)
-			const cwd = vscode.workspace.workspaceFolders?.map((folder) => folder.uri.fsPath).at(0) || ""
+			const cwd = this.cwd
 
 			const mode = message.mode ?? defaultModeSlug
 			const customModes = await this.customModesManager.getCustomModes()
@@ -2288,13 +2314,10 @@ export class ClineProvider extends EventEmitter<ClineProviderEvents> implements 
 		// delete task from the task history state
 		await this.deleteTaskFromState(id)
 
-		// get the base directory of the project
-		const baseDir = vscode.workspace.workspaceFolders?.map((folder) => folder.uri.fsPath).at(0)
-
 		// Delete associated shadow repository or branch.
 		// TODO: Store `workspaceDir` in the `HistoryItem` object.
 		const globalStorageDir = this.contextProxy.globalStorageUri.fsPath
-		const workspaceDir = baseDir ?? ""
+		const workspaceDir = this.cwd
 
 		try {
 			await ShadowCheckpointService.deleteTask({ taskId: id, globalStorageDir, workspaceDir })
@@ -2343,6 +2366,8 @@ export class ClineProvider extends EventEmitter<ClineProviderEvents> implements 
 			alwaysAllowModeSwitch,
 			alwaysAllowSubtasks,
 			soundEnabled,
+			ttsEnabled,
+			ttsSpeed,
 			diffEnabled,
 			enableCheckpoints,
 			checkpointStorage,
@@ -2380,7 +2405,7 @@ export class ClineProvider extends EventEmitter<ClineProviderEvents> implements 
 		const telemetryKey = process.env.POSTHOG_API_KEY
 		const machineId = vscode.env.machineId
 		const allowedCommands = vscode.workspace.getConfiguration("roo-cline").get<string[]>("allowedCommands") || []
-		const cwd = vscode.workspace.workspaceFolders?.map((folder) => folder.uri.fsPath).at(0) || ""
+		const cwd = this.cwd
 
 		return {
 			version: this.context.extension?.packageJSON?.version ?? "",
@@ -2402,6 +2427,8 @@ export class ClineProvider extends EventEmitter<ClineProviderEvents> implements 
 				.filter((item: HistoryItem) => item.ts && item.task)
 				.sort((a: HistoryItem, b: HistoryItem) => b.ts - a.ts),
 			soundEnabled: soundEnabled ?? false,
+			ttsEnabled: ttsEnabled ?? false,
+			ttsSpeed: ttsSpeed ?? 1.0,
 			diffEnabled: diffEnabled ?? true,
 			enableCheckpoints: enableCheckpoints ?? true,
 			checkpointStorage: checkpointStorage ?? "task",
@@ -2563,6 +2590,8 @@ export class ClineProvider extends EventEmitter<ClineProviderEvents> implements 
 			taskHistory: stateValues.taskHistory,
 			allowedCommands: stateValues.allowedCommands,
 			soundEnabled: stateValues.soundEnabled ?? false,
+			ttsEnabled: stateValues.ttsEnabled ?? false,
+			ttsSpeed: stateValues.ttsSpeed ?? 1.0,
 			diffEnabled: stateValues.diffEnabled ?? true,
 			enableCheckpoints: stateValues.enableCheckpoints ?? true,
 			checkpointStorage: stateValues.checkpointStorage ?? "task",

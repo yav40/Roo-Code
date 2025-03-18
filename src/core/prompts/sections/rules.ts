@@ -1,7 +1,4 @@
 import { DiffStrategy } from "../../diff/DiffStrategy"
-import { modes, ModeConfig } from "../../../shared/modes"
-import * as vscode from "vscode"
-import * as path from "path"
 
 function getEditingInstructions(diffStrategy?: DiffStrategy, experiments?: Record<string, boolean>): string {
 	const instructions: string[] = []
