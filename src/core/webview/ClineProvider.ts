@@ -91,6 +91,7 @@ export class ClineProvider extends EventEmitter<ClineProviderEvents> implements 
 	constructor(
 		readonly context: vscode.ExtensionContext,
 		private readonly outputChannel: vscode.OutputChannel,
+		private readonly renderContext: "sidebar" | "editor" = "sidebar",
 	) {
 		super()
 
@@ -2375,11 +2376,10 @@ export class ClineProvider extends EventEmitter<ClineProviderEvents> implements 
 			showRooIgnoredFiles,
 			language,
 		} = await this.getState()
+
 		const telemetryKey = process.env.POSTHOG_API_KEY
 		const machineId = vscode.env.machineId
-
 		const allowedCommands = vscode.workspace.getConfiguration("roo-cline").get<string[]>("allowedCommands") || []
-
 		const cwd = vscode.workspace.workspaceFolders?.map((folder) => folder.uri.fsPath).at(0) || ""
 
 		return {
@@ -2441,6 +2441,7 @@ export class ClineProvider extends EventEmitter<ClineProviderEvents> implements 
 			machineId,
 			showRooIgnoredFiles: showRooIgnoredFiles ?? true,
 			language,
+			renderContext: this.renderContext,
 		}
 	}
 
